@@ -1,0 +1,11 @@
+-- Project 04: Stock Price Forecasting
+-- Step 00: Infrastructure
+
+CREATE DATABASE IF NOT EXISTS ML_STOCKS
+  COMMENT = 'Stock price forecasting with Cortex ML - FORECAST and ANOMALY_DETECTION';
+
+CREATE SCHEMA IF NOT EXISTS ML_STOCKS.STAGING COMMENT = 'Prepared OHLCV data and engineered features';
+CREATE SCHEMA IF NOT EXISTS ML_STOCKS.MODELS COMMENT = 'Cortex ML model objects';
+CREATE SCHEMA IF NOT EXISTS ML_STOCKS.RESULTS COMMENT = 'Predictions, anomalies, and technical indicators';
+
+GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE_PUBLIC_DATA_FREE TO ROLE ACCOUNTADMIN;
