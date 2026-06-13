@@ -1,0 +1,78 @@
+-- =============================================================
+-- Project 02: Real-Time Weather Pipeline
+-- Step 01: RAW Layer (Time-Windowed Views)
+-- POC: ~10M rows total budget
+-- =============================================================
+
+-- NWS Weather Observations (core fact table)
+-- Filtered to 12-hour window + key variables = ~10M rows
+CREATE OR REPLACE VIEW WEATHER_DOMAIN.RAW.WEATHER_OBSERVATIONS AS
+SELECT
+    NWS_WEATHER_STATION_ID,
+    VARIABLE,
+    VARIABLE_NAME,
+    TIMESTAMP,
+    VALUE,
+    UNIT,
+    QUALITY_FLAG
+FROM SNOWFLAKE_PUBLIC_DATA_FREE.PUBLIC_DATA_FREE.NWS_WEATHER_TIMESERIES
+WHERE TIMESTAMP >= '2026-03-14 12:00:00'
+  AND VARIABLE IN (
+    'temperature', 'dew_point', 'relative_humidity',
+    'wind_speed', 'wind_gust', 'barometric_pressure', 'visibility'
+  )
+LIMIT 10000000;
+
+-- METAR Airport Reports
+CREATE OR REPLACE VIEW WEATHER_DOMAIN.RAW.METAR_REPORTS AS
+SELECT
+    AIRPORT_ID,
+    STATION_ID,
+    "DATE" AS OBSERVATION_TIMESTAMP,
+    VARIABLE,
+    VARIABLE_NAME,
+    VALUE,
+    UNIT
+FROM SNOWFLAKE_PUBLIC_DATA_FREE.PUBLIC_DATA_FREE.AWC_METAR_TIMESERIES
+WHERE "DATE" >= '2026-02-10 00:00:00'
+  AND VARIABLE IN (
+    'temperature', 'dew_point', 'wind_speed',
+    'wind_gust', 'visibility', 'altimeter', 'relative_humidity'
+  )
+LIMIT 500000;
+
+-- NWS Weather Alerts (90-day window)
+CREATE OR REPLACE VIEW WEATHER_DOMAIN.RAW.WEATHER_ALERTS AS
+SELECT
+    COUNTY_GEO_ID,
+    NWS_ALERT_ID,
+    ALERT_STATUS,
+    ALERT_TYPE,
+    NWS_REPORTER,
+    ALERT_TITLE,
+    ALERT_DESCRIPTION,
+    EVENT_TYPE,
+    EVENT_CATEGORY,
+    EVENT_CERTAINTY,
+    EVENT_SEVERITY,
+    EVENT_URGENCY,
+    SENT_TIMESTAMP,
+    EFFECTIVE_TIMESTAMP,
+    EXPIRATION_TIMESTAMP,
+    ONSET_TIMESTAMP,
+    END_TIMESTAMP
+FROM SNOWFLAKE_PUBLIC_DATA_FREE.PUBLIC_DATA_FREE.NWS_WEATHER_ALERT_EVENTS
+WHERE SENT_TIMESTAMP >= DATEADD(day, -90, CURRENT_TIMESTAMP());
+
+-- Station Index (full - small reference table)
+CREATE OR REPLACE VIEW WEATHER_DOMAIN.RAW.STATION_INDEX AS
+SELECT
+    NWS_WEATHER_STATION_ID,
+    NWS_WEATHER_STATION_NAME,
+    COUNTY_GEO_ID,
+    STATE_GEO_ID,
+    LATITUDE,
+    LONGITUDE,
+    ELEVATION,
+    TIMEZONE
+FROM SNOWFLAKE_PUBLIC_DATA_FREE.PUBLIC_DATA_FREE.NWS_WEATHER_STATION_INDEX;

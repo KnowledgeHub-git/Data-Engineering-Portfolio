@@ -4,8 +4,8 @@
 
 | Phase | Project | Status | Started | Completed |
 |-------|---------|--------|---------|-----------|
-| 1 - Data Eng | 01 - Multi-Domain Data Mesh | In Progress | 2026-06-13 | — |
-| 1 - Data Eng | 02 - Real-Time Weather Pipeline | Not Started | — | — |
+| 1 - Data Eng | 01 - Multi-Domain Data Mesh | Complete | 2026-06-13 | 2026-06-13 |
+| 1 - Data Eng | 02 - Real-Time Weather Pipeline | Complete | 2026-06-13 | 2026-06-13 |
 | 1 - Data Eng | 03 - Economic Data Vault | Not Started | — | — |
 | 2 - ML | 04 - Stock Price Forecasting | Not Started | — | — |
 | 2 - ML | 05 - Healthcare Network Analysis | Not Started | — | — |
@@ -30,7 +30,8 @@
 
 ## Key Milestones
 
-- [ ] Gold layer operational (Project 1 complete)
+- [x] Gold layer operational (Project 1 complete)
+- [x] Weather pipeline with Dynamic Tables + Alerts (Project 2 complete)
 - [ ] First ML model deployed to Model Registry (Project 4)
 - [ ] First Cortex Search service live (Project 7)
 - [ ] First Cortex Agent functional (Project 10)
