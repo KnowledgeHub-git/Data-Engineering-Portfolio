@@ -1,119 +1,212 @@
-# Qlik Connection Guide — Project 01
+# Qlik Connection Guide — Project 01 Data Mesh
 
-## Connecting Qlik Sense to the Gold Layer
+## Connecting Qlik Cloud to Snowflake
 
-### Option 1: Qlik Sense Desktop (ODBC)
+### Connection Settings (Verified Working)
 
-1. Install the **Snowflake ODBC driver** from Snowflake downloads
-2. Create a DSN (Data Source Name):
-   - **Server:** `prb43560.snowflakecomputing.com`
-   - **Port:** `443`
-   - **Database:** `PORTFOLIO_DATA_MESH`
-   - **Schema:** `GOLD`
-   - **Warehouse:** `COMPUTE_WH`
-   - **Role:** `ACCOUNTADMIN`
-3. In Qlik Sense, create a new connection using ODBC and select the DSN
+| Field | Value |
+|-------|-------|
+| **Server** | `prb43560.snowflakecomputing.com` |
+| **Port** | `443` |
+| **Database** | `SALES_DOMAIN` |
+| **Schema** | `CURATED` |
+| **Warehouse** | `COMPUTE_WH` |
+| **Role** | `ACCOUNTADMIN` |
+| **User** | `BIWARO` |
+| **Auth** | Username + Password |
 
-### Option 2: Qlik Cloud (Direct Query)
+> Note: The data mesh uses 3 domain databases. The connection defaults to SALES_DOMAIN
+> but the load script queries across all domains using fully-qualified names.
 
-1. In Qlik Cloud, navigate to **Data Sources > Create**
-2. Select **Snowflake** connector
-3. Enter connection details:
-   - Server: `prb43560.snowflakecomputing.com`
-   - Database: `PORTFOLIO_DATA_MESH`
-   - Schema: `GOLD`
-   - Warehouse: `COMPUTE_WH`
-   - Role: `ACCOUNTADMIN`
-4. Authenticate with your Snowflake credentials
+### Data Mesh Architecture
+
+| Database | Schema | Tables |
+|----------|--------|--------|
+| `SALES_DOMAIN` | `CURATED` | COMPANY_DIRECTORY, STOCK_DAILY_OHLCV |
+| `FINANCE_DOMAIN` | `CURATED` | CORPORATE_FINANCIALS, ECONOMIC_METRICS, INSTITUTION_DIRECTORY |
+| `MARKETING_DOMAIN` | `CURATED` | DIGITAL_PRESENCE, INDUSTRY_PROFILES, INNOVATION_INDEX |
 
 ### Recommended Load Script
 
 ```qvs
-// Qlik Sense Load Script for Portfolio Data Mesh Gold Layer
-// Uses Direct Query for live data from Snowflake Dynamic Tables
+// =============================================================
+// Qlik Sense Load Script — Portfolio Data Mesh (Cross-Domain)
+// Loads from CURATED layer across 3 domain databases
+// Connection: Snowflake_Portfolio (COMPUTE_WH / ACCOUNTADMIN)
+// =============================================================
 
 LIB CONNECT TO 'Snowflake_Portfolio';
 
-// Dimension: Company
-DIM_COMPANY:
+// =============================================================
+// SALES DOMAIN
+// =============================================================
+
+// Company Directory (master dimension)
+COMPANY_DIRECTORY:
 LOAD *;
 SQL SELECT
     COMPANY_ID,
     COMPANY_NAME,
+    ENTITY_LEVEL,
+    EIN,
+    CIK,
+    PERMID_COMPANY_ID,
     PRIMARY_TICKER,
     PRIMARY_EXCHANGE_CODE,
-    PRIMARY_EXCHANGE_NAME,
-    EXCHANGE_REGION
-FROM PORTFOLIO_DATA_MESH.GOLD.GOLD_DIM_COMPANY;
+    PRIMARY_EXCHANGE_NAME
+FROM SALES_DOMAIN.CURATED.COMPANY_DIRECTORY;
 
-// Dimension: Calendar
-DIM_CALENDAR:
-LOAD *;
-SQL SELECT
-    CALENDAR_DATE,
-    YEAR_NUM,
-    MONTH_NUM,
-    QUARTER_NUM,
-    DAY_NAME,
-    MONTH_NAME,
-    IS_WEEKDAY,
-    YEAR_QUARTER_LABEL,
-    YEAR_MONTH_LABEL
-FROM PORTFOLIO_DATA_MESH.GOLD.GOLD_DIM_CALENDAR;
-
-// Dimension: Geography
-DIM_GEOGRAPHY:
-LOAD *;
-SQL SELECT
-    GEO_ID,
-    GEO_NAME,
-    GEO_LEVEL,
-    ISO_NAME,
-    ISO_ALPHA2
-FROM PORTFOLIO_DATA_MESH.GOLD.GOLD_DIM_GEOGRAPHY
-WHERE GEO_LEVEL_DEPTH <= 3;  // Country, State, County only for performance
-
-// Fact: Stock Prices (use Direct Query for large table)
-// For large volumes, consider incremental load or Direct Query mode
-FACT_STOCK_PRICES:
+// Stock OHLCV (main fact table)
+STOCK_DAILY:
 LOAD *;
 SQL SELECT
     TICKER,
-    TRADE_DATE AS CALENDAR_DATE,  // Links to DIM_CALENDAR
+    ASSET_CLASS,
+    PRIMARY_EXCHANGE_CODE,
+    PRIMARY_EXCHANGE_NAME,
+    "DATE" AS TRADE_DATE,
     OPEN_PRICE,
     HIGH_PRICE,
     LOW_PRICE,
     CLOSE_PRICE,
-    VOLUME,
-    DAILY_RETURN_PCT,
-    MA_7D,
-    MA_30D,
-    VOLATILITY_30D
-FROM PORTFOLIO_DATA_MESH.GOLD.GOLD_FACT_STOCK_PRICES
-WHERE TRADE_DATE >= '2020-01-01';  // Limit history for performance
+    VOLUME
+FROM SALES_DOMAIN.CURATED.STOCK_DAILY_OHLCV
+WHERE "DATE" >= '2020-01-01';
+
+// =============================================================
+// FINANCE DOMAIN
+// =============================================================
+
+// Corporate Financials (SEC filings)
+CORPORATE_FINANCIALS:
+LOAD *;
+SQL SELECT
+    CIK,
+    ADSH,
+    FORM_TYPE,
+    METRIC_TAG,
+    MEASURE_DESCRIPTION,
+    UNIT,
+    AMOUNT,
+    PERIOD_START_DATE,
+    PERIOD_END_DATE,
+    COVERED_QTRS
+FROM FINANCE_DOMAIN.CURATED.CORPORATE_FINANCIALS;
+
+// Economic Metrics (Federal Reserve / macro data)
+ECONOMIC_METRICS:
+LOAD *;
+SQL SELECT
+    GEO_ID,
+    VARIABLE,
+    VARIABLE_NAME,
+    "DATE" AS METRIC_DATE,
+    VALUE,
+    UNIT
+FROM FINANCE_DOMAIN.CURATED.ECONOMIC_METRICS;
+
+// Financial Institutions Directory
+INSTITUTION_DIRECTORY:
+LOAD *;
+SQL SELECT
+    ID_RSSD,
+    NAME,
+    CATEGORY,
+    IS_ACTIVE,
+    CITY,
+    STATE_ABBREVIATION,
+    ENTITY_TYPE,
+    FEDERAL_REGULATOR,
+    CHARTER_TYPE,
+    INSURER,
+    NAICS_CODE
+FROM FINANCE_DOMAIN.CURATED.INSTITUTION_DIRECTORY;
+
+// =============================================================
+// MARKETING DOMAIN
+// =============================================================
+
+// Industry Profiles (company classification)
+INDUSTRY_PROFILES:
+LOAD *;
+SQL SELECT
+    COMPANY_ID,
+    COMPANY_NAME,
+    INDUSTRY,
+    SIC_DESCRIPTION,
+    STATE,
+    CITY,
+    ENTITY_TYPE
+FROM MARKETING_DOMAIN.CURATED.INDUSTRY_PROFILES;
+
+// Digital Presence (company domains)
+DIGITAL_PRESENCE:
+LOAD *;
+SQL SELECT
+    COMPANY_ID,
+    COMPANY_NAME,
+    DOMAIN_ID,
+    RELATIONSHIP_START_DATE,
+    RELATIONSHIP_END_DATE,
+    IS_ACTIVE
+FROM MARKETING_DOMAIN.CURATED.DIGITAL_PRESENCE;
+
+// Innovation Index (patents)
+INNOVATION_INDEX:
+LOAD *;
+SQL SELECT
+    PATENT_ID,
+    INVENTION_TITLE,
+    PATENT_STATUS,
+    PATENT_TYPE,
+    APPLICATION_DATE,
+    DOCUMENT_PUBLICATION_DATE,
+    NUMBER_OF_CLAIMS,
+    CPC_SECTION_DESCRIPTION,
+    CPC_CLASS_DESCRIPTION
+FROM MARKETING_DOMAIN.CURATED.INNOVATION_INDEX;
 ```
 
-### Associative Model Mapping
+### Associative Model — Key Links
 
-| Qlik Concept | Maps To |
-|-------------|---------|
-| TICKER field | Links FACT_STOCK_PRICES to DIM_COMPANY.PRIMARY_TICKER |
-| CALENDAR_DATE field | Links FACT_STOCK_PRICES to DIM_CALENDAR.CALENDAR_DATE |
-| Set Analysis `{<YEAR_NUM={2024}>}` | Filter by calendar dimension |
-| Set Analysis `{<EXCHANGE_REGION={'US'}>}` | Filter by geography |
+| Qlik Table | Key Field | Links To |
+|------------|-----------|----------|
+| STOCK_DAILY | `TICKER` | COMPANY_DIRECTORY.`PRIMARY_TICKER` |
+| CORPORATE_FINANCIALS | `CIK` | COMPANY_DIRECTORY.`CIK` |
+| INDUSTRY_PROFILES | `COMPANY_ID` | COMPANY_DIRECTORY.`COMPANY_ID` |
+| DIGITAL_PRESENCE | `COMPANY_ID` | COMPANY_DIRECTORY.`COMPANY_ID` |
 
 ### Suggested Qlik Measures
 
 ```
-// Year-to-date return
-Sum(CLOSE_PRICE) / Sum(OPEN_PRICE) - 1
+// Daily return %
+(CLOSE_PRICE - OPEN_PRICE) / OPEN_PRICE
 
 // Average daily volume
 Avg(VOLUME)
 
-// 30-day volatility (pre-computed in Snowflake)
-Avg(VOLATILITY_30D)
+// Total filings by company
+Count(DISTINCT ADSH)
 
-// Count of trading days
-Count(DISTINCT CALENDAR_DATE)
+// Active patents
+Count({<PATENT_STATUS={'Active'}>} PATENT_ID)
+
+// Trading days loaded
+Count(DISTINCT TRADE_DATE)
+```
+
+### Set Analysis Examples
+
+```
+// Filter stock data to 2024
+{<TRADE_DATE={">='2024-01-01'"}>}
+
+// Only US exchanges
+{<PRIMARY_EXCHANGE_CODE={'XNYS','XNAS'}>}
+
+// Quarterly SEC filings only
+{<FORM_TYPE={'10-Q'}>}
+
+// Active institutions only
+{<IS_ACTIVE={1}>}
 ```
