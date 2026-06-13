@@ -1,0 +1,12 @@
+definition_version: "2"
+entities:
+  data_mesh_dashboard:
+    type: streamlit
+    identifier:
+      name: DATA_MESH_DASHBOARD
+      schema: APPS
+      database: MESH_GOVERNANCE
+    title: "Data Mesh Dashboard"
+    query_warehouse: GOVERNANCE_WH
+    main_file: streamlit_app.py
+    stage: MESH_GOVERNANCE.APPS.STREAMLIT_STAGE
