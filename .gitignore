@@ -1,0 +1,43 @@
+# OS artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+
+# Snowflake
+.snowflake/
+snowflake_credentials.json
+*.env
+.env
+.env.local
+
+# Qlik
+*.qvw
+*.qvf
+*.qvd
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# Secrets
+credentials.json
+secrets.yaml
