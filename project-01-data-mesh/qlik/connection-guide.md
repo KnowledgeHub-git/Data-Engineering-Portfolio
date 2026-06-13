@@ -6,11 +6,12 @@
 
 1. Install the **Snowflake ODBC driver** from Snowflake downloads
 2. Create a DSN (Data Source Name):
-   - **Server:** `PYMWAGP-LGB07431.snowflakecomputing.com`
+   - **Server:** `prb43560.snowflakecomputing.com`
+   - **Port:** `443`
    - **Database:** `PORTFOLIO_DATA_MESH`
    - **Schema:** `GOLD`
-   - **Warehouse:** `PORTFOLIO_WH`
-   - **Role:** Your role with access to the database
+   - **Warehouse:** `COMPUTE_WH`
+   - **Role:** `ACCOUNTADMIN`
 3. In Qlik Sense, create a new connection using ODBC and select the DSN
 
 ### Option 2: Qlik Cloud (Direct Query)
@@ -18,10 +19,11 @@
 1. In Qlik Cloud, navigate to **Data Sources > Create**
 2. Select **Snowflake** connector
 3. Enter connection details:
-   - Account: `PYMWAGP-LGB07431`
+   - Server: `prb43560.snowflakecomputing.com`
    - Database: `PORTFOLIO_DATA_MESH`
    - Schema: `GOLD`
-   - Warehouse: `PORTFOLIO_WH`
+   - Warehouse: `COMPUTE_WH`
+   - Role: `ACCOUNTADMIN`
 4. Authenticate with your Snowflake credentials
 
 ### Recommended Load Script

@@ -7,35 +7,55 @@ st.set_page_config(page_title="Data Mesh Dashboard", layout="wide")
 session = get_active_session()
 
 # Sidebar navigation
-page = st.sidebar.radio("Navigation", ["Overview", "Data Products", "Governance", "Explorer"])
+page = st.sidebar.radio("Navigation", [
+    "Overview",
+    "Data Products",
+    "Governance",
+    "Explorer"
+])
 
 # --- OVERVIEW ---
 if page == "Overview":
     st.title("Data Mesh on Snowflake")
+
     st.markdown("""
-    This project implements a **production-grade data mesh** on Snowflake, demonstrating how 
-    independent business domains can own, govern, and share data as products — while maintaining 
-    centralized governance and enabling natural language analytics.
+    ## The Problem
+    
+    Most organizations start their data journey with a centralized data warehouse. A small platform team 
+    owns everything — ingestion, transformations, quality, access. It works at first. But as the company 
+    scales to dozens of domains, the central team becomes a bottleneck. Requests queue up. Context gets lost. 
+    Data quality degrades because the people closest to the data don't own it.
+    
+    **Data Mesh** flips this model: treat data as a product, give ownership to domain teams, provide a 
+    self-serve platform, and apply governance federally rather than centrally.
+    
+    This project implements that philosophy on Snowflake — end to end.
     """)
 
     st.divider()
 
-    # Architecture diagram using Mermaid
-    st.subheader("Architecture")
+    st.markdown("""
+    ## What Was Built
+    
+    A production-grade data mesh across three business domains (**Sales**, **Finance**, **Marketing**), 
+    each with full autonomy over their data lifecycle, backed by centralized governance that enforces 
+    security and quality without creating bottlenecks.
+    """)
+
     st.markdown("""
     ```
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │                     MESH_GOVERNANCE (Central)                        │
-    │   Tags · Masking Policies · Row Access · DMFs · Cortex Agent        │
-    └──────────────────────────────┬──────────────────────────────────────┘
-                                   │ applies to
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │                     MESH_GOVERNANCE (Central)                            │
+    │   Tags · Masking Policies · Row Access · DMFs · Cortex Agent            │
+    └──────────────────────────────┬──────────────────────────────────────────┘
+                                   │ applies to all domains
           ┌────────────────────────┼────────────────────────┐
           ▼                        ▼                        ▼
     ┌─────────────┐         ┌─────────────┐         ┌─────────────┐
     │   SALES     │         │  FINANCE    │         │  MARKETING  │
     │   DOMAIN    │         │  DOMAIN     │         │  DOMAIN     │
     ├─────────────┤         ├─────────────┤         ├─────────────┤
-    │ RAW         │         │ RAW         │         │ RAW         │
+    │ RAW (land)  │         │ RAW (land)  │         │ RAW (land)  │
     │  ↓ DT       │         │  ↓ DT       │         │  ↓ DT       │
     │ CURATED     │         │ CURATED     │         │ CURATED     │
     │  ↓ Views    │         │  ↓ Views    │         │  ↓ Views    │
@@ -44,37 +64,44 @@ if page == "Overview":
            │                       │                       │
            └───────────────────────┼───────────────────────┘
                                    ▼
-                         Cortex Agent (NL Q&A)
-                         Streamlit Dashboard
+                    ┌───────────────────────────┐
+                    │  Cortex Agent (NL Q&A)     │
+                    │  Streamlit Dashboard       │
+                    └───────────────────────────┘
     ```
     """)
 
     st.divider()
 
-    # Key pillars
-    st.subheader("Five Pillars of Data Mesh")
+    st.markdown("## The Five Pillars")
     pillars = pd.DataFrame({
         "Pillar": [
             "Domain Ownership",
-            "Data Products",
+            "Data as Product",
             "Self-Serve Platform",
             "Federated Governance",
             "Semantic Layer"
         ],
-        "Implementation": [
-            "3 databases with per-domain warehouses and OWNER/CONTRIBUTOR/READER roles",
-            "Secure views in PRODUCTS schema, cross-domain SELECT grants",
-            "8 Dynamic Tables with 1hr target lag — no orchestration code needed",
-            "Central tags, masking policies, row access policies, and DMFs",
-            "3 Semantic Views with verified queries + Cortex Agent for NL access"
+        "What It Means": [
+            "Each team owns their data end-to-end",
+            "Data is discoverable, governed, and has an SLA",
+            "Domain teams build pipelines without a central ticket",
+            "Central policies, domain autonomy",
+            "Business users query with intent, not SQL"
+        ],
+        "How It's Implemented": [
+            "3 isolated databases, per-domain warehouses, OWNER/CONTRIBUTOR/READER roles",
+            "Secure views in PRODUCTS schemas with descriptions and cross-domain grants",
+            "8 Dynamic Tables with declarative SQL — no DAGs, no orchestration code",
+            "Tags, masking policies, DMFs — defined once in MESH_GOVERNANCE, applied everywhere",
+            "3 Semantic Views with verified queries + Cortex Agent for natural language"
         ]
     })
     st.dataframe(pillars, use_container_width=True)
 
     st.divider()
 
-    # Live metrics
-    st.subheader("Live Infrastructure Metrics")
+    st.markdown("## Live Infrastructure")
     col1, col2, col3, col4 = st.columns(4)
 
     dt_df = session.sql("""
@@ -90,23 +117,73 @@ if page == "Overview":
     col3.metric("Semantic Views", "3")
     col4.metric("Governance Policies", "7")
 
-    st.subheader("Dynamic Table Health")
-    st.caption("Self-serve pipelines — automatically refresh when source data changes.")
+    st.markdown("### Dynamic Table Health")
+    st.caption("Self-serve pipelines — automatically refresh when source data changes. No scheduler needed.")
     st.dataframe(dt_df, use_container_width=True)
+
+    st.divider()
+
+    st.markdown("""
+    ## How It Works
+    
+    **1. Domain Teams Own Their Data** — Each domain has a dedicated database with RAW → CURATED → PRODUCTS flow.
+    
+    **2. Data Flows Without Orchestration** — Dynamic Tables declare transformations in SQL. 
+    Snowflake handles refresh automatically within the target lag (1 hour).
+    
+    **3. Governance Without Gatekeeping** — Masking policies enforce PII protection based on role. 
+    A `SALES_READER` sees `***MASKED***` while `SALES_OWNER` sees real values. No code changes needed.
+    
+    **4. Cross-Domain Consumption** — Finance needs Sales data? Their OWNER role inherits SALES_READER 
+    automatically. Zero-copy, governed access.
+    
+    **5. Natural Language Access** — The Cortex Agent routes questions to the right domain:
+    - "Top stocks by price?" → Sales Analytics
+    - "CPI trends?" → Finance Analytics  
+    - "Companies by industry?" → Marketing Analytics
+    """)
+
+    st.divider()
+
+    st.markdown("""
+    ## Tech Stack
+    
+    | Component | Purpose |
+    |-----------|---------|
+    | Snowflake (AWS US West 2) | Core platform |
+    | Dynamic Tables | Declarative ELT — no orchestrator needed |
+    | Semantic Views | Business-level data model for NL queries |
+    | Cortex Agent | Natural language Q&A across all domains |
+    | Streamlit-in-Snowflake | This dashboard |
+    | Snow CLI | Deployment automation |
+    | Data Source | SNOWFLAKE_PUBLIC_DATA_FREE (370 real-world datasets) |
+    """)
 
 # --- DATA PRODUCTS ---
 elif page == "Data Products":
     st.title("Data Products")
+
     st.markdown("""
-    **Role in the Data Mesh:** Each domain publishes governed, discoverable data products 
-    through the PRODUCTS schema. Other domains consume these via cross-domain grants — 
-    zero-copy, governed, and always fresh.
+    ## Role in the Data Mesh
     
-    Data products are the **contract** between producer and consumer. They are:
-    - **Discoverable** — listed in the catalog with descriptions
+    Each domain publishes governed, discoverable **data products** through the PRODUCTS schema. 
+    Other domains consume these via cross-domain grants — zero-copy, governed, and always fresh.
+    
+    Data products are the **contract** between producer and consumer:
+    - **Discoverable** — listed here with descriptions
     - **Governed** — masking policies enforce PII protection for readers
     - **Fresh** — backed by Dynamic Tables that auto-refresh from RAW
     - **Queryable** — accessible via SQL, Semantic Views, or the Cortex Agent
+    
+    ### How Cross-Domain Access Works
+    
+    ```
+    FINANCE_OWNER role
+      └── inherits SALES_READER
+           └── can SELECT from SALES_DOMAIN.PRODUCTS.*
+    
+    No tickets. No data copies. Just role inheritance.
+    ```
     """)
 
     st.divider()
@@ -126,8 +203,12 @@ elif page == "Data Products":
             st.info("No published views yet.")
 
     st.divider()
-    st.subheader("Semantic Views (Natural Language Layer)")
-    st.markdown("These power the Cortex Agent — ask questions in plain English.")
+
+    st.markdown("## Semantic Views (Natural Language Layer)")
+    st.markdown("""
+    These power the Cortex Agent — users ask questions in plain English and get SQL-backed answers.
+    Each has 3 verified queries that improve accuracy on common questions.
+    """)
     sem_df = pd.DataFrame({
         "Semantic View": ["SALES_ANALYTICS", "FINANCE_ANALYTICS", "MARKETING_ANALYTICS"],
         "Domain": ["Sales", "Finance", "Marketing"],
@@ -140,25 +221,52 @@ elif page == "Data Products":
     })
     st.dataframe(sem_df, use_container_width=True)
 
+    st.divider()
+
+    st.markdown("""
+    ## Data Sources
+    
+    All data comes from `SNOWFLAKE_PUBLIC_DATA_FREE` — Snowflake's built-in free dataset:
+    
+    | Domain | Source | What It Contains |
+    |--------|--------|-----------------|
+    | Sales | COMPANY_INDEX | 10K companies with tickers, CIK, LEI, EIN |
+    | Sales | STOCK_PRICE_TIMESERIES | Daily OHLCV for equities (2025+) |
+    | Sales | SEC_13F_INDEX | Institutional investor holdings |
+    | Finance | FINANCIAL_ECONOMIC_INDICATORS_TIMESERIES | CPI, GDP, employment, mortgage rates |
+    | Finance | FINANCIAL_INSTITUTION_ENTITIES | 9.5K FDIC-regulated banks |
+    | Finance | SEC_CORPORATE_REPORT_ATTRIBUTES | XBRL financial KPIs from 10-K/10-Q |
+    | Marketing | USPTO_PATENT_INDEX | 10K patents with CPC classifications |
+    | Marketing | COMPANY_DOMAIN_RELATIONSHIPS | 20K company-to-website mappings |
+    | Marketing | COMPANY_CHARACTERISTICS | Industry, SIC, address, entity type |
+    """)
+
 # --- GOVERNANCE ---
 elif page == "Governance":
     st.title("Federated Governance")
+
     st.markdown("""
-    **Role in the Data Mesh:** Governance is centralized in `MESH_GOVERNANCE` but applied 
-    federally across all domains. This ensures consistent security and quality without 
-    bottlenecking domain teams.
+    ## Role in the Data Mesh
+    
+    Governance is centralized in `MESH_GOVERNANCE` but applied **federally** across all domains. 
+    This ensures consistent security and quality without bottlenecking domain teams.
     
     The governance layer provides:
     - **Classification Tags** — PII, SENSITIVITY, DOMAIN_OWNER, DATA_PRODUCT
-    - **Dynamic Masking** — Columns auto-mask for READER roles (no code changes needed)
-    - **Row Access Policies** — Domain isolation for shared cross-domain tables
+    - **Dynamic Masking** — Columns auto-mask for READER roles (no code changes)
+    - **Row Access Policies** — Domain isolation for shared tables
     - **Data Quality DMFs** — Automated freshness, completeness, and uniqueness checks
+    
+    ### The Key Insight
+    
+    Domain teams never interact with governance directly. They build their tables, and the 
+    central MESH_ADMIN applies policies to them. If a column is tagged PII, it's masked for 
+    readers automatically — no application changes, no deployment, no tickets.
     """)
 
     st.divider()
 
-    # RBAC diagram
-    st.subheader("RBAC Hierarchy")
+    st.markdown("## RBAC Hierarchy")
     st.markdown("""
     ```
     ACCOUNTADMIN
@@ -170,11 +278,29 @@ elif page == "Governance":
     Cross-domain: Each OWNER inherits other domains' READER roles
     Masking: READER sees ***MASKED*** | OWNER/CONTRIBUTOR sees real values
     ```
+    
+    | Role | Permissions |
+    |------|------------|
+    | OWNER | Full DDL, publish products, manage team |
+    | CONTRIBUTOR | Write to RAW/CURATED, create dynamic tables |
+    | READER | Read PRODUCTS only (masking enforced) |
+    | MESH_ADMIN | Define tags, policies, DMFs, manage agent |
     """)
 
     st.divider()
 
-    st.subheader("PII Tags Applied")
+    st.markdown("## Masking Policies")
+    st.markdown("""
+    | Policy | Behavior | Applied To |
+    |--------|----------|-----------|
+    | `MASK_PII` | Full mask: `***MASKED***` | EIN, Filing Manager, Address, ZIP, Employer ID |
+    | `MASK_EMAIL` | Domain only: `***@domain.com` | URLs, web domains |
+    | `MASK_PHONE` | Partial: `+1 ***..34` | Available (not currently applied) |
+    """)
+
+    st.divider()
+
+    st.markdown("## PII Tags Applied")
     try:
         tag_df = session.sql("""
             SELECT 
@@ -186,29 +312,24 @@ elif page == "Governance":
         if not tag_df.empty:
             st.dataframe(tag_df, use_container_width=True)
         else:
-            st.info("Tag references may take up to 2 hours to appear in ACCOUNT_USAGE.")
+            st.info("Tag references take up to 2 hours to appear in ACCOUNT_USAGE. Check back soon.")
     except Exception:
         st.info("Tag references not yet available (ACCOUNT_USAGE latency up to 2 hours).")
 
-    st.subheader("Masking Policies")
-    try:
-        mask_df = session.sql("""
-            SELECT POLICY_NAME, REF_DATABASE_NAME, REF_SCHEMA_NAME, 
-                   REF_ENTITY_NAME, REF_COLUMN_NAME
-            FROM SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES
-            WHERE POLICY_KIND = 'MASKING_POLICY'
-              AND POLICY_DATABASE = 'MESH_GOVERNANCE'
-            ORDER BY REF_DATABASE_NAME
-        """).to_pandas()
-        if not mask_df.empty:
-            st.dataframe(mask_df, use_container_width=True)
-        else:
-            st.info("Policy references may take up to 2 hours to appear in ACCOUNT_USAGE.")
-    except Exception:
-        st.info("Policy references not yet available (ACCOUNT_USAGE latency up to 2 hours).")
+    st.divider()
 
-    st.subheader("Data Quality Monitoring (DMFs)")
-    st.caption("DMFs run automatically when data changes. Results appear below after first trigger.")
+    st.markdown("## Data Quality Monitoring (DMFs)")
+    st.markdown("""
+    DMFs are attached to all 9 RAW tables with `TRIGGER_ON_CHANGES` schedule:
+    
+    | DMF | What It Checks |
+    |-----|---------------|
+    | `DMF_NULL_RATE` | % of NULLs in critical columns |
+    | `DMF_DUPLICATE_COUNT` | Duplicates on primary key columns |
+    | `DMF_MAX_DATE` | Freshness (latest record date) |
+    | `DMF_ROW_COUNT_CHECK` | Empty table detection |
+    """)
+    st.caption("Results appear below after data changes trigger the DMFs.")
     try:
         dq_df = session.sql("""
             SELECT TABLE_NAME, METRIC_NAME, VALUE, MEASUREMENT_TIME
@@ -226,12 +347,28 @@ elif page == "Governance":
 # --- EXPLORER ---
 elif page == "Explorer":
     st.title("Cross-Domain Query Explorer")
+
     st.markdown("""
-    **Role in the Data Mesh:** The semantic layer enables any user to query structured 
-    data products using business terminology. No need to know table schemas or write JOINs — 
-    the Semantic View handles it.
+    ## Role in the Data Mesh
     
-    Select a domain below and run a query against its Semantic View, or modify the SQL to explore freely.
+    The **semantic layer** enables any user to query structured data products using business 
+    terminology. No need to know table schemas or write JOINs — the Semantic View handles it.
+    
+    The Cortex Agent uses these same Semantic Views to answer natural language questions, 
+    routing to the right domain automatically based on the question's intent.
+    
+    ### How It Works
+    
+    ```sql
+    -- Instead of knowing table schemas and writing JOINs:
+    SELECT * FROM SEMANTIC_VIEW(
+      SALES_DOMAIN.PRODUCTS.SALES_ANALYTICS
+      METRICS stock_prices.avg_close
+      DIMENSIONS stock_prices.ticker
+    )
+    ```
+    
+    Select a domain below and run a query, or modify the SQL to explore freely.
     """)
 
     st.divider()
@@ -274,3 +411,20 @@ LIMIT 20""")
             st.caption(f"{len(result_df)} rows returned")
         except Exception as e:
             st.error(f"Query error: {e}")
+
+    st.divider()
+
+    st.markdown("""
+    ## Try These Questions with the Cortex Agent
+    
+    The Data Mesh Agent (`MESH_GOVERNANCE.APPS.DATA_MESH_AGENT`) understands all 3 domains:
+    
+    | Question | Routes To |
+    |----------|-----------|
+    | "What are the top 10 stocks by average closing price?" | Sales Analytics |
+    | "Show total trading volume by exchange" | Sales Analytics |
+    | "What is the average CPI value by unit?" | Finance Analytics |
+    | "How many 10-K vs 10-Q filings are in the data?" | Finance Analytics |
+    | "Which industries have the most companies?" | Marketing Analytics |
+    | "What states have the most registered companies?" | Marketing Analytics |
+    """)
