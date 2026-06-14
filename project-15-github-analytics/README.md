@@ -1,29 +1,57 @@
 # Project 15 — GitHub Developer Analytics
 
-Qlik Sense dashboard analyzing open-source project momentum using GitHub event data, with company-to-repo mapping for competitive intelligence.
+Star velocity and project momentum analysis for 30 top data/AI open-source repositories.
 
 ---
 
-## Status: Planned
+## Status: Complete
 
 ## Overview
 
 | Attribute | Value |
 |-----------|-------|
-| **Target Persona** | BI Developer |
-| **Snowflake Features** | Qlik Associative Model, Time Series, Semi-structured JSON |
-| **Source Data** | GITHUB_EVENTS, GITHUB_REPOS, GITHUB_STARS, COMPANY_DOMAIN_RELATIONSHIPS |
-| **Depends On** | None (standalone, but benefits from Project 01 company dim) |
-| **Feeds Into** | Standalone portfolio piece |
+| **Target Persona** | BI Developer, OSS Analyst |
+| **Snowflake Features** | Window functions, CTAS, Views, Streamlit-in-Snowflake |
+| **Source Data** | GITHUB_STARS (68M rows), GITHUB_REPOS (591M rows) |
+| **Curated Repos** | 30 top data/AI projects |
+| **Data Range** | Jan 2024 — Jun 2026 (24,895 daily star records) |
+| **Credit Cost** | ~0.3 credits (stars-only approach, skipped 3.5B events table) |
+| **Streamlit** | Deployed as `GITHUB_DASHBOARD` |
 
-## Key Deliverables
+## Architecture
 
-- [ ] Analyze OSS project momentum (star velocity, event frequency, contributor growth)
-- [ ] Map repos to companies using COMPANY_DOMAIN_RELATIONSHIPS
-- [ ] Qlik associative exploration: company → OSS activity → contributor patterns
-- [ ] Time-series of community engagement
-- [ ] Semi-structured JSON parsing in Snowflake for GitHub event payloads
+```
+SNOWFLAKE_PUBLIC_DATA_FREE
+  GITHUB_REPOS (591M) ──filter 30──> CURATED_REPOS (30 repos)
+  GITHUB_STARS (68M)  ──join──────> STAR_VELOCITY (24,895 rows)
+                                          |
+                                    REPO_RANKINGS (view)
+                                          |
+                              ┌────────────┴────────────┐
+                         Streamlit              Qlik Cloud
+                      (2-tab dashboard)        (load script)
+```
 
-## How This Fits in the 15-Project Plan
+## Repos Tracked
 
-Demonstrates working with **semi-structured data** (JSON events) and building **competitive intelligence** dashboards. A lighter project that rounds out the portfolio with a tech-industry-relevant use case.
+LangChain, Hugging Face Transformers, CrewAI, Supabase, AutoGen, PyTorch, FastAPI, TensorFlow, Tailwind CSS, Qdrant, dbt-core, Streamlit, Polars, DuckDB, Gradio, LlamaIndex, Airflow, MLflow, Ray, Pandas, pgvector, Chroma, Snowflake CLI, Next.js, OpenAI Python, and more.
+
+## Key Metrics
+
+| Metric | Description |
+|--------|-------------|
+| STARS_ADDED | Daily new stars per repo |
+| CUMULATIVE_STARS | Running total since first star |
+| STARS_7D_AVG | 7-day moving average (smoothed trend) |
+| STARS_LAST_30D | Stars added in last 30 days |
+| GROWTH_ACCELERATION | This week vs avg of prior 4 weeks (>1 = accelerating) |
+
+## Streamlit Dashboard
+
+Two tabs:
+1. **Project Rankings** — Bar chart of 30-day stars, full rankings table with acceleration
+2. **Star Velocity** — Multi-repo line chart comparing weekly star growth over time
+
+## Credit Efficiency
+
+Saved ~1.8 credits by skipping the 3.5B-row GITHUB_EVENTS table. The stars-only approach still delivers project momentum, popularity comparisons, and growth acceleration — the most actionable OSS analytics metrics.
