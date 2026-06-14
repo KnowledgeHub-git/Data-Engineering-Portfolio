@@ -24,8 +24,7 @@ st.sidebar.markdown("""
 
 if st.sidebar.button("Clear conversation"):
     st.session_state.messages = []
-    st.session_state.thread_id = None
-    st.rerun()
+    st.experimental_rerun()
 
 st.sidebar.divider()
 st.sidebar.markdown("**Try these:**")
@@ -38,78 +37,73 @@ samples = [
 for s in samples:
     if st.sidebar.button(s, key=s):
         st.session_state.pending_question = s
+        st.experimental_rerun()
 
 # State
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "thread_id" not in st.session_state:
-    st.session_state.thread_id = None
+if "pending_question" not in st.session_state:
+    st.session_state.pending_question = ""
 
 # Display history
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+    if msg["role"] == "user":
+        st.markdown(f"**You:** {msg['content']}")
+    else:
+        st.markdown(f"**Agent:** {msg['content']}")
         if msg.get("tools_used"):
             with st.expander("Tools called"):
                 for t in msg["tools_used"]:
                     st.markdown(f"- `{t}`")
+    st.divider()
 
 # Input
-prompt = st.chat_input("Ask a market research question...")
-if hasattr(st.session_state, "pending_question"):
-    prompt = st.session_state.pending_question
-    del st.session_state.pending_question
+with st.form("question_form", clear_on_submit=True):
+    user_input = st.text_input("Ask a market research question:", value=st.session_state.pending_question)
+    submitted = st.form_submit_button("Submit")
 
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+if submitted and user_input:
+    st.session_state.pending_question = ""
+    st.session_state.messages.append({"role": "user", "content": user_input})
 
-    with st.chat_message("assistant"):
-        with st.spinner("Researching across multiple data sources..."):
-            prompt_escaped = prompt.replace("\\", "\\\\").replace('"', '\\"')
-            payload = json.dumps({
-                "messages": [{"role": "user", "content": [{"type": "text", "text": prompt_escaped}]}],
-                "stream": False
-            })
+    with st.spinner("Researching across multiple data sources..."):
+        prompt_escaped = user_input.replace("\\", "\\\\").replace('"', '\\"')
+        payload = json.dumps({
+            "messages": [{"role": "user", "content": [{"type": "text", "text": prompt_escaped}]}],
+            "stream": False
+        })
 
-            result_raw = session.sql(f"""
-                SELECT SNOWFLAKE.CORTEX.DATA_AGENT_RUN(
-                    '{AGENT}',
-                    $${payload}$$,
-                    TRUE
-                )
-            """).collect()[0][0]
+        result_raw = session.sql(f"""
+            SELECT SNOWFLAKE.CORTEX.DATA_AGENT_RUN(
+                '{AGENT}',
+                $${payload}$$,
+                TRUE
+            )
+        """).collect()[0][0]
 
-            response = json.loads(result_raw) if result_raw else {}
-            content = response.get("content", [])
+        response = json.loads(result_raw) if result_raw else {}
+        content = response.get("content", [])
 
-            answer_text = ""
-            tools_used = []
+        answer_text = ""
+        tools_used = []
 
-            for item in content:
-                item_type = item.get("type", "")
-                if item_type == "text":
-                    answer_text += item.get("text", "")
-                elif item_type == "tool_use":
-                    tool_info = item.get("tool_use", {})
-                    tools_used.append(tool_info.get("name", "unknown"))
-                elif item_type == "tool_result":
-                    tool_info = item.get("tool_result", {})
-                    tools_used.append(tool_info.get("name", "unknown"))
+        for item in content:
+            item_type = item.get("type", "")
+            if item_type == "text":
+                answer_text += item.get("text", "")
+            elif item_type == "tool_use":
+                tool_info = item.get("tool_use", {})
+                tools_used.append(tool_info.get("name", "unknown"))
+            elif item_type == "tool_result":
+                tool_info = item.get("tool_result", {})
+                tools_used.append(tool_info.get("name", "unknown"))
 
-            if not answer_text and "message" in response:
-                answer_text = f"Error: {response['message']}"
-
-        st.markdown(answer_text or "No response generated.")
-        if tools_used:
-            unique_tools = list(dict.fromkeys(tools_used))
-            with st.expander("Tools called"):
-                for t in unique_tools:
-                    st.markdown(f"- `{t}`")
+        if not answer_text and "message" in response:
+            answer_text = f"Error: {response['message']}"
 
     st.session_state.messages.append({
         "role": "assistant",
-        "content": answer_text,
+        "content": answer_text or "No response generated.",
         "tools_used": list(dict.fromkeys(tools_used))
     })
+    st.experimental_rerun()

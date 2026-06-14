@@ -24,7 +24,7 @@ mode = st.sidebar.radio("Mode", ["Chat", "Quick Compare"])
 
 if st.sidebar.button("Clear conversation"):
     st.session_state.messages = []
-    st.rerun()
+    st.experimental_rerun()
 
 st.sidebar.divider()
 st.sidebar.markdown("**Try these:**")
@@ -38,6 +38,13 @@ samples = [
 for s in samples:
     if st.sidebar.button(s, key=s):
         st.session_state.pending_question = s
+        st.experimental_rerun()
+
+# State
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "pending_question" not in st.session_state:
+    st.session_state.pending_question = ""
 
 
 def call_agent(question):
@@ -71,45 +78,39 @@ def call_agent(question):
     if not answer_text and "message" in response:
         answer_text = f"Error: {response['message']}"
 
-    return answer_text, list(dict.fromkeys(tools_used))
+    return answer_text or "No response generated.", list(dict.fromkeys(tools_used))
 
 
 # === CHAT MODE ===
 if mode == "Chat":
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
+    # Display history
     for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+        if msg["role"] == "user":
+            st.markdown(f"**You:** {msg['content']}")
+        else:
+            st.markdown(f"**Agent:** {msg['content']}")
             if msg.get("tools_used"):
                 with st.expander("Tools called"):
                     for t in msg["tools_used"]:
                         st.markdown(f"- `{t}`")
+        st.divider()
 
-    prompt = st.chat_input("Ask about real estate investment...")
-    if hasattr(st.session_state, "pending_question"):
-        prompt = st.session_state.pending_question
-        del st.session_state.pending_question
+    # Input
+    with st.form("question_form", clear_on_submit=True):
+        user_input = st.text_input("Ask about real estate investment:", value=st.session_state.pending_question)
+        submitted = st.form_submit_button("Submit")
 
-    if prompt:
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    if submitted and user_input:
+        st.session_state.pending_question = ""
+        st.session_state.messages.append({"role": "user", "content": user_input})
 
-        with st.chat_message("assistant"):
-            with st.spinner("Analyzing markets and risk data..."):
-                answer, tools = call_agent(prompt)
-
-            st.markdown(answer or "No response generated.")
-            if tools:
-                with st.expander("Tools called"):
-                    for t in tools:
-                        st.markdown(f"- `{t}`")
+        with st.spinner("Analyzing markets and risk data..."):
+            answer, tools = call_agent(user_input)
 
         st.session_state.messages.append({
             "role": "assistant", "content": answer, "tools_used": tools
         })
+        st.experimental_rerun()
 
 # === COMPARISON MODE ===
 elif mode == "Quick Compare":
