@@ -14,7 +14,7 @@
 | 3 - GenAI | 08 - Patent Intelligence | Complete | 2026-06-14 | 2026-06-14 |
 | 3 - GenAI | 09 - Financial Document QA | Complete | 2026-06-14 | 2026-06-14 |
 | 4 - Agents | 10 - Market Research Agent | Complete | 2026-06-14 | 2026-06-14 |
-| 4 - Agents | 11 - Climate ESG Agent | Not Started | — | — |
+| 4 - Agents | 11 - Climate ESG Agent | Complete | 2026-06-14 | 2026-06-14 |
 | 4 - Agents | 12 - Real Estate Advisor Agent | Not Started | — | — |
 | 5 - Qlik | 13 - Qlik KPI Suite | Not Started | — | — |
 | 5 - Qlik | 14 - Qlik AutoML Pipeline | Not Started | — | — |
