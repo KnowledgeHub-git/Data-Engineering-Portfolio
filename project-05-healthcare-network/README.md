@@ -1,29 +1,67 @@
 # Project 05 — Healthcare Provider Network Analysis
 
-Network analysis and clustering of US healthcare providers using NPPES data, identifying underserved areas and predicting provider deactivation risk.
+Network analysis of US healthcare providers using NPPES data — clustering, healthcare desert detection, and deactivation risk classification via Cortex ML.
 
 ---
 
-## Status: Planned
+## Status: Complete (POC)
 
 ## Overview
 
 | Attribute | Value |
 |-----------|-------|
 | **Target Persona** | Data Scientist |
-| **Snowflake Features** | Snowpark ML, Clustering, Classification, Graph Analytics |
-| **Source Data** | NPPES_NPI_INDEX, NPPES_PROVIDER_ADDRESSES, NPPES_NUCC_TAXONOMY, GEOGRAPHY_INDEX, ACS |
-| **Depends On** | Project 01 (geography dimension) |
-| **Feeds Into** | Standalone portfolio piece |
+| **Snowflake Features** | Cortex ML CLASSIFICATION, Window Functions, ACS Demographics |
+| **Source Data** | NPPES (9.6M providers), American Community Survey |
+| **POC Scope** | 5M providers, 500-row scoring sample (credit-efficient) |
+| **Feeds Into** | Standalone healthcare analytics portfolio piece |
 
-## Key Deliverables
+## Architecture
 
-- [ ] Provider clustering by specialty and geography (K-Means via Snowpark)
-- [ ] Healthcare desert detection (underserved areas: ACS demographics vs provider density)
-- [ ] Graph analytics on referral patterns
-- [ ] Classification model predicting provider deactivation risk
-- [ ] Spatial analysis with H3 geospatial functions
+```
+NPPES_NPI_INDEX + PRACTITIONER_ATTRIBUTES + TAXONOMY + ADDRESSES
+    │
+    ▼
+HEALTH_ML.STAGING
+    ├── PROVIDER_PROFILES (5M, joined wide: specialty + geography + lifecycle)
+    ├── STATE_PROVIDER_DENSITY (providers per 100K by state + specialty)
+    ├── DEACTIVATION_FEATURES (ML feature matrix)
+    └── CLASSIFICATION_TRAINING (10K balanced: 5K active + 5K deactivated)
+    │
+    ▼
+HEALTH_ML.RESULTS
+    ├── PROVIDER_CLUSTERS (5 segments: Metro, Rural, Academic, Suburban, Mixed)
+    ├── HEALTHCARE_DESERTS (97 severe deserts across 39 states)
+    └── DEACTIVATION_RISK_SCORES (classifier predictions)
+```
 
-## How This Fits in the 15-Project Plan
+## Key Findings
 
-Demonstrates **domain-specific ML** on healthcare data — a high-value industry use case. Shows ability to combine multiple public datasets for actionable insights that matter to real organizations.
+### Provider Clusters
+| Cluster | Segments | Providers |
+|---------|----------|-----------|
+| Metro High-Density | 150 | 3.1M |
+| Academic/Specialty Hub | 327 | 1.5M |
+| Suburban Moderate | 477 | 409K |
+| Mixed/Transitional | 329 | 13K |
+| Rural Low-Density | 148 | 1.2K |
+
+### Healthcare Deserts
+- **97 severe desert** state-specialty combinations across **39 states**
+- Deserts defined as < 50% of national median providers per 100K
+- Mental health and primary care most affected
+
+### Deactivation Risk
+- Model trained on balanced 10K sample (Cortex ML CLASSIFICATION)
+- Predicts which active providers are likely to deactivate
+
+## Reproducing
+
+```sql
+-- All SQL in sql/healthcare_pipeline.sql
+-- Run in order: database → staging → clustering → deserts → classifier
+```
+
+## Qlik Integration
+
+See [qlik/connection-guide.md](qlik/connection-guide.md)

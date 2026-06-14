@@ -1,0 +1,48 @@
+# Qlik Connection Guide — Project 05 Healthcare Network
+
+## Connection Settings
+
+| Field | Value |
+|-------|-------|
+| **Server** | `prb43560.snowflakecomputing.com` |
+| **Database** | `HEALTH_ML` |
+| **Schema** | `RESULTS` |
+| **Warehouse** | `COMPUTE_WH` |
+| **Role** | `ACCOUNTADMIN` |
+
+## Load Script
+
+```qvs
+LIB CONNECT TO 'Snowflake_HealthML';
+
+PROVIDER_CLUSTERS:
+LOAD *;
+SQL SELECT STATE, SPECIALTY_GROUP, ACTIVE_PROVIDERS, PROVIDERS_PER_100K,
+    STATE_POPULATION, AVG_YEARS_ACTIVE, CLUSTER_LABEL
+FROM HEALTH_ML.RESULTS.PROVIDER_CLUSTERS;
+
+HEALTHCARE_DESERTS:
+LOAD *;
+SQL SELECT STATE, SPECIALTY_GROUP, ACTIVE_PROVIDERS, STATE_POPULATION,
+    PROVIDERS_PER_100K, NATIONAL_MEDIAN_PER_100K, PCT_BELOW_MEDIAN, DESERT_CLASSIFICATION
+FROM HEALTH_ML.RESULTS.HEALTHCARE_DESERTS;
+
+RISK_SCORES:
+LOAD *;
+SQL SELECT YEARS_ACTIVE, GENDER, SPECIALTY_GROUP, STATE,
+    PREDICTED_DEACTIVATION
+FROM HEALTH_ML.RESULTS.DEACTIVATION_RISK_SCORES;
+```
+
+## Suggested Measures
+
+```
+// States in severe desert
+Count({<DESERT_CLASSIFICATION={'Severe Desert'}>} DISTINCT STATE)
+
+// Providers per 100K (selected state)
+Sum(PROVIDERS_PER_100K)
+
+// High-risk providers
+Count({<PREDICTED_DEACTIVATION={'True'}>} 1)
+```
