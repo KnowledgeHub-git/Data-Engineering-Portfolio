@@ -16,7 +16,7 @@
 | 4 - Agents | 10 - Market Research Agent | Complete | 2026-06-14 | 2026-06-14 |
 | 4 - Agents | 11 - Climate ESG Agent | Complete | 2026-06-14 | 2026-06-14 |
 | 4 - Agents | 12 - Real Estate Advisor Agent | Complete | 2026-06-14 | 2026-06-14 |
-| 5 - Qlik | 13 - Qlik KPI Suite | Not Started | — | — |
+| 5 - Qlik | 13 - Qlik KPI Suite | Complete | 2026-06-14 | 2026-06-14 |
 | 5 - Qlik | 14 - Qlik AutoML Pipeline | Not Started | — | — |
 | 5 - Qlik | 15 - GitHub Developer Analytics | Not Started | — | — |
 
@@ -35,4 +35,4 @@
 - [ ] First ML model deployed to Model Registry (Project 4)
 - [x] First Cortex Search service live (Project 7)
 - [x] First Cortex Agent functional (Project 10)
-- [ ] Qlik connected end-to-end (Project 13)
+- [x] Qlik connected end-to-end (Project 13)
