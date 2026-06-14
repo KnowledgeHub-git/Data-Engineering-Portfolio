@@ -1,29 +1,50 @@
 # Project 08 — Patent Intelligence
 
-AI-powered patent analysis using Cortex AI functions to extract, summarize, classify, and find similar patents across the USPTO corpus.
+AI-powered patent analysis using Cortex COMPLETE for classification and summarization of USPTO patents.
 
 ---
 
-## Status: Planned
+## Status: Complete (POC)
 
 ## Overview
 
 | Attribute | Value |
 |-----------|-------|
 | **Target Persona** | AI Developer |
-| **Snowflake Features** | AI_EXTRACT, AI_SUMMARIZE, AI_CLASSIFY, AI_EMBED, Vector Search |
-| **Source Data** | USPTO_PATENT_INDEX, USPTO_PATENT_TEXT_ATTRIBUTES, OPENALEX_WORKS_INDEX, COMPANY_INDEX |
-| **Depends On** | Project 01 (company dimension) |
-| **Feeds Into** | Standalone portfolio piece (competitive intelligence) |
+| **Snowflake Features** | Cortex COMPLETE (classification, summarization), CPC taxonomy |
+| **Source Data** | USPTO_PATENT_INDEX (17M patents, POC: 2000 staged, 50 AI-enriched) |
+| **Credit Usage** | ~100 LLM calls (50 patents x 2 functions) |
 
-## Key Deliverables
+## Architecture
 
-- [ ] AI_EXTRACT: structured fields from patent text (claims, tech domains, inventors)
-- [ ] AI_SUMMARIZE: executive-level patent digests
-- [ ] AI_CLASSIFY: categorize patents by technology vertical
-- [ ] Embedding + similarity search for related patent discovery
-- [ ] Company-to-patent mapping for competitive intelligence
+```
+USPTO_PATENT_INDEX (17M patents, marketplace)
+    │ Filter: 2000 recent patents with text (2023+)
+    ▼
+PATENT_AI.STAGING.PATENT_CORPUS (2000 rows, truncated text)
+    │ AI functions on 50 patents
+    ▼
+PATENT_AI.RESULTS.AI_ENRICHED_PATENTS (50 rows)
+    ├── AI_CATEGORY: Technology vertical classification
+    └── AI_SUMMARY: One-sentence patent digest
+```
 
-## How This Fits in the 15-Project Plan
+## AI Functions Demonstrated
 
-Showcases the full suite of **Cortex AI functions** on unstructured text — a different pattern from the RAG approach in Project 07. Demonstrates extraction, classification, and embedding-based similarity in a single pipeline.
+| Function | Purpose | Output |
+|----------|---------|--------|
+| COMPLETE (classify) | Categorize patent into tech vertical | AI/ML, Biotech, Telecom, etc. |
+| COMPLETE (summarize) | One-sentence executive summary | ~30 word digest |
+
+## Sample Results
+
+| Patent | AI Category | Summary |
+|--------|-------------|---------|
+| Quality Testing of Communications | Telecom | Method for testing conference call endpoint quality |
+| Pepper Hybrid SVPS0953 | Biotech | New pepper hybrid and parent lines |
+| Ballasted Telecom Mounts | Telecom | Mounts using ballast for stability |
+| Gadolinium Complex | Biotech | Complex with chelating ligand for MRI contrast |
+
+## Qlik Integration
+
+See [qlik/connection-guide.md](qlik/connection-guide.md)

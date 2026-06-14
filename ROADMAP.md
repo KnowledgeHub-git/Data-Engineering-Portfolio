@@ -11,7 +11,7 @@
 | 2 - ML | 05 - Healthcare Network Analysis | Complete | 2026-06-14 | 2026-06-14 |
 | 2 - ML | 06 - Climate Risk Scoring | Complete | 2026-06-14 | 2026-06-14 |
 | 3 - GenAI | 07 - Earnings Call RAG | Complete | 2026-06-14 | 2026-06-14 |
-| 3 - GenAI | 08 - Patent Intelligence | Not Started | — | — |
+| 3 - GenAI | 08 - Patent Intelligence | Complete | 2026-06-14 | 2026-06-14 |
 | 3 - GenAI | 09 - Financial Document QA | Not Started | — | — |
 | 4 - Agents | 10 - Market Research Agent | Not Started | — | — |
 | 4 - Agents | 11 - Climate ESG Agent | Not Started | — | — |
