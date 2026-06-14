@@ -12,7 +12,7 @@
 | 2 - ML | 06 - Climate Risk Scoring | Complete | 2026-06-14 | 2026-06-14 |
 | 3 - GenAI | 07 - Earnings Call RAG | Complete | 2026-06-14 | 2026-06-14 |
 | 3 - GenAI | 08 - Patent Intelligence | Complete | 2026-06-14 | 2026-06-14 |
-| 3 - GenAI | 09 - Financial Document QA | Not Started | — | — |
+| 3 - GenAI | 09 - Financial Document QA | Complete | 2026-06-14 | 2026-06-14 |
 | 4 - Agents | 10 - Market Research Agent | Not Started | — | — |
 | 4 - Agents | 11 - Climate ESG Agent | Not Started | — | — |
 | 4 - Agents | 12 - Real Estate Advisor Agent | Not Started | — | — |
@@ -33,6 +33,6 @@
 - [x] Gold layer operational (Project 1 complete)
 - [x] Weather pipeline with Dynamic Tables + Alerts (Project 2 complete)
 - [ ] First ML model deployed to Model Registry (Project 4)
-- [ ] First Cortex Search service live (Project 7)
+- [x] First Cortex Search service live (Project 7)
 - [ ] First Cortex Agent functional (Project 10)
 - [ ] Qlik connected end-to-end (Project 13)
